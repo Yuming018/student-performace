@@ -13,9 +13,9 @@ def label():
     original_df.drop(columns=['input text'], inplace=True)
     original_df.drop(columns=['confidence threshold'], inplace=True)
     original_df.drop(columns=['encoded device id'], inplace=True)
-    original_df.drop(columns=['log date\n'], inplace=True)
+    original_df.drop(columns=['log date\r\n'], inplace=True)
 
-    predict_df = pd.read_csv("./kai/task1.csv",encoding=' utf-8') 
+    predict_df = pd.read_csv("./GE/task1.csv",encoding=' utf-8') 
     predict_df.drop(columns=['處理的字串'], inplace=True)
     predict_df.drop(columns=['label'], inplace=True)
     
