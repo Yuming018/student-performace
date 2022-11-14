@@ -3,9 +3,10 @@ import csv
 import pandas as pd
 import numpy as np
 import re
-from sklearn.metrics import f1_score
+import argparse
+from sklearn.metrics import f1_score, precision_score, recall_score, classification_report
 
-def label():
+def label(name):
     original_df = pd.read_csv("./suffle_test.csv") 
     original_df.drop(columns=['timestamp'], inplace=True)
     original_df.drop(columns=['algo 名稱'], inplace=True)
@@ -15,7 +16,7 @@ def label():
     original_df.drop(columns=['encoded device id'], inplace=True)
     original_df.drop(columns=['log date\r\n'], inplace=True)
 
-    predict_df = pd.read_csv("./hong/task1.csv",encoding=' utf-8') 
+    predict_df = pd.read_csv(f"./{name}/task1.csv",encoding=' utf-8') 
     predict_df.drop(columns=['處理的字串'], inplace=True)
     predict_df.drop(columns=['label'], inplace=True)
     
@@ -51,7 +52,7 @@ def label():
     
     data = ['\ufeff處理的字串', 'label', 'predict']
 
-    with open('performace.csv', 'w', newline='', encoding="utf-8") as csvfile:
+    with open('performance.csv', 'w', newline='', encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
         writer.writerow(data)
         for i in range(len(original_column)):
@@ -60,7 +61,7 @@ def label():
     return intention
 
 def read_data(intention):
-    df = pd.read_csv('./performace.csv')
+    df = pd.read_csv('./performance.csv')
     df.drop(columns=['處理的字串'], inplace=True)
 
     for i in range(len(df['label'])):
@@ -69,7 +70,7 @@ def read_data(intention):
         if pd.isna(df['predict'][i]):
             df['predict'][i] = ""
     df = df.to_numpy()
-    
+
     orig ,pred = [], []
     for i in range(len(df)):
         temp ,temp2 = [] ,[]
@@ -84,15 +85,30 @@ def read_data(intention):
                 temp2.append(1)
         orig.append(temp)
         pred.append(temp2) 
+    
     return orig, pred
 
-def score(orig, pred):
-    macro_score = f1_score(orig, pred, average="macro")
-    micro_score = f1_score(orig, pred, average="micro")
-    print("macro_score : " + str(macro_score))
-    print("micro_score : " + str(micro_score))
+# def score(orig, pred):
+    # macro_pre_score = precision_score(orig, pred, average="macro")
+    # micro_pre_score = precision_score(orig, pred, average="micro")
+    # print("macro_precision_score : " + str(macro_pre_score))
+    # print("micro_precision_score : " + str(micro_pre_score))
+
+    # macro_re_score = recall_score(orig, pred, average="macro")
+    # micro_re_score = recall_score(orig, pred, average="micro")
+    # print("macro_recall_score : " + str(macro_re_score))
+    # print("micro_recall_score : " + str(micro_re_score))
+
+    # macro_f1_score = f1_score(orig, pred, average="macro")
+    # micro_f1_score = f1_score(orig, pred, average="micro")
+    # print("macro_f1_score : " + str(macro_f1_score))
+    # print("micro_f1_score : " + str(micro_f1_score))
 
 if __name__ == '__main__':
-    intention = label()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--file_name', '-n', type=str, default='lin')
+    args = parser.parse_args()
+
+    intention = label(args.file_name)
     orig, pred = read_data(intention)
-    score(orig, pred)
+    print(classification_report(orig, pred))
