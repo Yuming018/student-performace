@@ -6,6 +6,8 @@ import re
 import argparse
 from seqeval.metrics import classification_report
 from seqeval.scheme import IOB2
+import copy
+from collections import defaultdict
 
 def label(name):
     original_df = pd.read_csv("./suffle_test.csv") 
@@ -74,20 +76,28 @@ def read_data():
     df = df.to_numpy()
 
     true, pred = [], []
+    out_of = defaultdict(int)
     for i in range(len(df)):
-        temp, temp2 =[], []
+        temp =[]
+        nest_temp, nest_temp2 = [], []
+
         for j in range(len(df[i][0])):
             temp.append('O')
-            temp2.append('O')
+        for j in range(df[i][1].count('(')):
+            nest_temp.append(copy.deepcopy(temp))
+            nest_temp2.append(copy.deepcopy(temp))
         df[i][1] = re.sub("\(|\)","",df[i][1])
         df[i][2] = re.sub("\(|\)","",df[i][2])
-
+        
         try:
             true_pair = list(map(int, df[i][1].split(" ")))
         except: 
             true_pair = False
         try:
-            predict_pair = list(map(int, df[i][2].split(" ")))
+            df[i][2] = df[i][2].split(" ")
+            if '' in df[i][2]:
+                df[i][2].remove('')
+            predict_pair = list(map(int, df[i][2]))
         except: 
             predict_pair = False
         
@@ -95,21 +105,28 @@ def read_data():
             for j in range(0,len(true_pair),2):
                 for k in range(true_pair[j],true_pair[j+1]):
                     if k == true_pair[j]:
-                        temp[k] = 'B'
+                        nest_temp[j//2][k] = 'B'
                     else :
-                        temp[k] = 'I'
+                        nest_temp[j//2][k] = 'I'
+        
         if predict_pair:
             for j in range(0,len(predict_pair),2):
-                try:
-                    for k in range(predict_pair[j], predict_pair[j+1]):
+                for k in range(predict_pair[j], predict_pair[j+1]):
+                    try:
                         if k == predict_pair[j]:
-                            temp2[k] = 'B'
+                            nest_temp2[j//2][k] = 'B'
                         else : 
-                            temp2[k] = 'I'
-                except:
-                    break
-        true.append(temp)
-        pred.append(temp2)
+                            nest_temp2[j//2][k] = 'I'
+                    except:
+                        if df[i][0] not in out_of.keys():
+                            out_of[df[i][0]] = 1
+                        else:
+                            out_of.update({df[i][0]:1})
+        
+        for i in range(len(nest_temp)):
+            true.append(nest_temp[i])
+            pred.append(nest_temp2[i])
+        
     return true, pred    
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@ import argparse
 
 def process(name):
     path = f'./{name}/'
-    df = pd.read_csv(path + "original1.csv") 
+    df = pd.read_csv(path + "original2.csv") 
     df.drop(columns=['Unnamed: 0'], inplace=True)
     # print(df)
     for i in range(len(df['predict'])):
@@ -19,7 +19,7 @@ def process(name):
     
     data = ['\ufeff處理的字串', 'label', 'predict']
 
-    with open(path + 'task1.csv', 'w', newline='', encoding="utf-8") as csvfile:
+    with open(path + 'task2.csv', 'w', newline='', encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
         writer.writerow(data)
         for i in range(len(df)):
