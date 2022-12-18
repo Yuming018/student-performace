@@ -88,22 +88,6 @@ def read_data(intention):
     
     return orig, pred
 
-# def score(orig, pred):
-    # macro_pre_score = precision_score(orig, pred, average="macro")
-    # micro_pre_score = precision_score(orig, pred, average="micro")
-    # print("macro_precision_score : " + str(macro_pre_score))
-    # print("micro_precision_score : " + str(micro_pre_score))
-
-    # macro_re_score = recall_score(orig, pred, average="macro")
-    # micro_re_score = recall_score(orig, pred, average="micro")
-    # print("macro_recall_score : " + str(macro_re_score))
-    # print("micro_recall_score : " + str(micro_re_score))
-
-    # macro_f1_score = f1_score(orig, pred, average="macro")
-    # micro_f1_score = f1_score(orig, pred, average="micro")
-    # print("macro_f1_score : " + str(macro_f1_score))
-    # print("micro_f1_score : " + str(micro_f1_score))
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--file_name', '-n', type=str, default='lin')
@@ -111,4 +95,5 @@ if __name__ == '__main__':
 
     intention = label(args.file_name)
     orig, pred = read_data(intention)
-    print(classification_report(orig, pred))
+    print(intention)
+    print(classification_report(orig, pred, target_names = intention))

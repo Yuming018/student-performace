@@ -5,6 +5,10 @@ import pandas as pd
 import numpy as np
 import re
 import argparse
+from seqeval.metrics import classification_report
+from seqeval.scheme import IOB2
+import copy
+from collections import defaultdict
 
 def label(name):
     original_df = pd.read_csv("./suffle_test.csv") 
@@ -16,7 +20,7 @@ def label(name):
     original_df.drop(columns=['encoded device id'], inplace=True)
     original_df.drop(columns=['log date\r\n'], inplace=True)
 
-    predict_df = pd.read_csv(f"./{name}/task1.csv") 
+    predict_df = pd.read_csv(f"./{name}/task3.csv") 
     predict_df.drop(columns=['處理的字串'], inplace=True)
     predict_df.drop(columns=['label'], inplace=True)
     
@@ -33,9 +37,13 @@ def label(name):
         metadata = []
         temp = []
         for substr in re.finditer('metadata', original_column[i][1]):
-            next_dot = original_column[i][1].find('"',substr.end()+4)
+            start_ = original_column[i][1].find('start') #判斷metadata裡面是否有東西
+            if start_ == -1:
+                break
+
+            next_dot = original_column[i][1].find('"',substr.end()+4)   #find metadata
             metadata.append(original_column[i][1][substr.end()+4:next_dot])
-            
+
             start_ = original_column[i][1].find('start',next_dot)
             if start_ == -1:
                 break
@@ -54,9 +62,12 @@ def label(name):
             original_column[i][1] = temp_str_list
         except:
             original_column[i][1] = "" 
-        # original_column[i].append(predict_df[i][0])
+        try:
+            original_column[i].append(predict_df[i][0])
+        except:
+            original_column[i].append("")
     
-    data = ['\ufeff處理的字串', 'label', 'predict\n']
+    data = ['\ufeff處理的字串', 'label', 'predict']
 
     with open('performance3.csv', 'w', newline='', encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
@@ -65,32 +76,57 @@ def label(name):
             writer.writerow(original_column[i])
 
 def read_data():
-    df = pd.read_csv("./performance2.csv")
+    df = pd.read_csv("./performance3.csv")
 
     for i in range(len(df['label'])):
         if pd.isna(df['處理的字串'][i]):
             df['處理的字串'][i] = ""
         if pd.isna(df['label'][i]):
             df['label'][i] = ""
-        if pd.isna(df['predict\n'][i]):
-            df['predict\n'][i] = ""
+        if pd.isna(df['predict'][i]):
+            df['predict'][i] = ""
     df = df.to_numpy()
 
     true, pred = [], []
+    out_of = defaultdict(int)
+    intention = []
+    intention2 = []
     for i in range(len(df)):
-        temp, temp2 =[], []
+        temp =[]
+        nest_temp, nest_temp2 = [], []
+        
         for j in range(len(df[i][0])):
             temp.append('O')
-            temp2.append('O')
+        for j in range(df[i][1].count('(')):
+            nest_temp.append(copy.deepcopy(temp))
+            nest_temp2.append(copy.deepcopy(temp))
         df[i][1] = re.sub("\(|\)","",df[i][1])
         df[i][2] = re.sub("\(|\)","",df[i][2])
 
+        true_pair, predict_pair = [], []
+        true_metadata, predict_metadata = [], []
+        
         try:
-            true_pair = list(map(int, df[i][1].split(" ")))
+            df[i][1] = df[i][1].split(" ")
+            for j in df[i][1]:
+                if j >= '0' and j <= '9':
+                    true_pair.append(int(j))
+                else:
+                    true_metadata.append(j) 
+                    if j not in intention:
+                        intention.append(j)     
         except: 
             true_pair = False
+        
         try:
-            predict_pair = list(map(int, df[i][2].split(" ")))
+            df[i][2] = df[i][2].split(" ")
+            for j in df[i][2]:
+                if j >= '0' and j <= '9':
+                    predict_pair.append(int(j))
+                else:
+                    predict_metadata.append(j)
+                    if j not in intention2:
+                        intention2.append(j)
         except: 
             predict_pair = False
         
@@ -98,21 +134,30 @@ def read_data():
             for j in range(0,len(true_pair),2):
                 for k in range(true_pair[j],true_pair[j+1]):
                     if k == true_pair[j]:
-                        temp[k] = 'B'
+                        nest_temp[j//2][k] = 'B-' + true_metadata[j//2]
                     else :
-                        temp[k] = 'I'
+                        nest_temp[j//2][k] = 'I-' + true_metadata[j//2]
+                
         if predict_pair:
             for j in range(0,len(predict_pair),2):
-                try:
-                    for k in range(predict_pair[j], predict_pair[j+1]):
+                for k in range(predict_pair[j], predict_pair[j+1]):
+                    try:
                         if k == predict_pair[j]:
-                            temp2[k] = 'B'
+                            nest_temp2[j//2][k] = 'B-' + predict_metadata[j//2]
                         else : 
-                            temp2[k] = 'I'
-                except:
-                    break
-        true.append(temp)
-        pred.append(temp2)
+                            nest_temp2[j//2][k] = 'I-' + predict_metadata[j//2]
+                    except:
+                        if df[i][0] not in out_of.keys():
+                            out_of[df[i][0]] = 1
+                        else:
+                            out_of.update({df[i][0]:1})
+                        break
+        
+        for i in range(len(nest_temp)):
+            true.append(nest_temp[i])
+            pred.append(nest_temp2[i])
+    # print(intention)
+    # print(intention2)
     return true, pred    
 
 if __name__ == '__main__':
@@ -122,3 +167,4 @@ if __name__ == '__main__':
     
     label(args.file_name)
     true, pred = read_data()
+    print(classification_report(true, pred, scheme=IOB2))

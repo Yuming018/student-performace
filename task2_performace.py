@@ -55,7 +55,7 @@ def label(name):
         except:
             original_column[i].append("")
     
-    data = ['\ufeff處理的字串', 'label', 'predict\n']
+    data = ['\ufeff處理的字串', 'label', 'predict']
 
     with open('performance2.csv', 'w', newline='', encoding="utf-8") as csvfile:
         writer = csv.writer(csvfile, delimiter=',')
@@ -71,8 +71,8 @@ def read_data():
             df['處理的字串'][i] = ""
         if pd.isna(df['label'][i]):
             df['label'][i] = ""
-        if pd.isna(df['predict\n'][i]):
-            df['predict\n'][i] = ""
+        if pd.isna(df['predict'][i]):
+            df['predict'][i] = ""
     df = df.to_numpy()
 
     true, pred = [], []
@@ -126,7 +126,6 @@ def read_data():
         for i in range(len(nest_temp)):
             true.append(nest_temp[i])
             pred.append(nest_temp2[i])
-        
     return true, pred    
 
 if __name__ == '__main__':
